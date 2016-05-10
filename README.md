@@ -1,2 +1,4 @@
 # solstice
-"Solstice 2016" happening interface
+http://solstice2016.com happening interface 
+
+
