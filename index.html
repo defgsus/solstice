@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US">
+
+<head>
+
+    <title>Solstice 2016</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="KEYWORDS" content="solstice" />
+    <meta name="DESCRIPTION" content="Solstice 2016 concert interface" />
+    <meta name="author" content="Stefan Berke" />
+
+	<script id="shader-vs" type="x-shader/x-vertex">
+
+		precision mediump float;
+
+		attribute vec3 a_position;
+
+		uniform mat4 u_projection;
+		uniform mat4 u_modelView;
+		
+		varying vec3 v_pos;
+		varying vec3 v_pos_world;
+		
+		void main(void) 
+		{
+			vec4 pos_world = u_modelView * vec4(a_position, 1.0);
+			
+			v_pos = a_position;
+			v_pos_world = pos_world.xyz;
+			gl_Position = u_projection * pos_world;
+		}
+		
+	</script>
+
+	<script id="starshader-fs" type="x-shader/x-fragment">
+
+		precision mediump float;
+
+		varying vec3 v_pos;
+		varying vec3 v_pos_world;
+		
+		void main(void) 
+		{
+			vec3 col = vec3(1,1,.9);
+			gl_FragColor = vec4(clamp(col, 0., 1.), 1.0);
+		}
+		
+	</script>
+
+
+	<script id="earthshader-fs" type="x-shader/x-fragment">
+
+		precision mediump float;
+
+		varying vec3 v_pos;
+		varying vec3 v_pos_world;
+
+		uniform sampler2D u_earth_tex;
+		uniform sampler2D u_timezones_tex;
+		uniform float u_time;
+	    uniform vec3 u_selPoint;
+	    
+		void main(void) 
+		{
+			// get tex-coord from sphere surface
+			const float PI = 3.14159265;
+			vec3 sphere = v_pos / 10.; 
+			vec2 texCoord = vec2(atan(-sphere.z, sphere.x)/PI/2.+.5, 
+								 acos(sphere.y)/PI);
+
+			// base color
+			//float f = abs(v_pos.y) / 30.;
+			vec3 ecol = texture2D(u_earth_tex, texCoord).xyz;
+						//vec3(texCoord, 0.0);
+			
+			// sun light
+			vec3 sunpos = vec3(cos(u_time/30.),0,sin(u_time/30.))*1000.;
+			vec3 sunnorm = normalize(sunpos - v_pos_world);
+			vec3 suncol = vec3(1,1,.8);
+			vec3 earthnorm = normalize(v_pos);
+			float sund = max(0., dot(earthnorm, sunnorm));
+			vec3 col = ecol * (.1 + .9*sund) + .2*sund * suncol;
+
+			// selection flash-light
+			float d = distance(u_selPoint, v_pos);
+			col += vec3(smoothstep(.01,.0,abs(d-1.)-0.02));
+			
+			// timezone
+			float tz = texture2D(u_timezones_tex, texCoord).x * 39.;
+			col += .2 * smoothstep(.5, .0, abs(tz - mod(u_time,40.)));
+
+			gl_FragColor = vec4(clamp(col, 0., 1.), 1.0);
+		}
+		
+	</script>
+
+	<script id="watershader-fs" type="x-shader/x-fragment">
+
+		precision mediump float;
+
+		varying vec3 v_pos;
+		varying vec3 v_pos_world;
+		
+		uniform sampler2D u_earth_tex;
+		uniform sampler2D u_timezones_tex;
+		uniform float u_time;
+		uniform vec3 u_selPoint;
+		
+		float hash1(in vec2 p) { return fract(sin(dot(p,vec2(11,13)))*(7111.1 + dot(p,vec2(103,107)))); }
+		float hash1(in vec3 p) { return fract(sin(dot(p,vec3(11,13,17)))*(7111.1 + dot(p,vec3(103,107,111)))); }
+		vec3 hash3(in vec3 p) { return fract(sin(p+dot(p,p))*(7111.1 + p*vec3(103,107,111))); }
+		float noise1(in vec2 p) 
+		{
+			vec2 i = floor(p), f = p - i;
+			f = f*f*(3.-2.*f);
+			float x0 = mix(hash1(i+vec2(0,0)),hash1(i+vec2(1,0)),f.x);
+			float x1 = mix(hash1(i+vec2(0,1)),hash1(i+vec2(1,1)),f.x);
+			return mix(x0, x1, f.y);
+		}
+		float noise1(in vec3 p) 
+		{
+			vec3 i = floor(p), f = p - i;
+			f = f*f*(3.-2.*f);
+			float n000 = mix(hash1(i+vec3(0,0,0)), hash1(i+vec3(1,0,0)), f.x);
+			float n010 = mix(hash1(i+vec3(0,1,0)), hash1(i+vec3(1,1,0)), f.x);
+			float n001 = mix(hash1(i+vec3(0,0,1)), hash1(i+vec3(1,0,1)), f.x);
+			float n011 = mix(hash1(i+vec3(0,1,1)), hash1(i+vec3(1,1,1)), f.x);
+			float n00 = mix(n000, n010, f.y);
+			float n01 = mix(n001, n011, f.y);
+			return mix(n00, n01, f.z);
+		}
+		vec3 noise3(in vec3 p) 
+		{
+			vec3 i = floor(p), f = p - i;
+			f = f*f*(3.-2.*f);
+			vec3 n000 = mix(hash3(i+vec3(0,0,0)), hash3(i+vec3(1,0,0)), f.x);
+			vec3 n010 = mix(hash3(i+vec3(0,1,0)), hash3(i+vec3(1,1,0)), f.x);
+			vec3 n001 = mix(hash3(i+vec3(0,0,1)), hash3(i+vec3(1,0,1)), f.x);
+			vec3 n011 = mix(hash3(i+vec3(0,1,1)), hash3(i+vec3(1,1,1)), f.x);
+			vec3 n00 = mix(n000, n010, f.y);
+			vec3 n01 = mix(n001, n011, f.y);
+			return mix(n00, n01, f.z);
+		}
+		
+		void main(void) 
+		{
+			// get tex-coord from sphere surface
+			const float PI = 3.14159265;
+			vec3 sphere = v_pos / 10.; 
+			vec2 texCoord = vec2(atan(-sphere.z, sphere.x)/PI/2.+.5, 
+								 acos(sphere.y)/PI);
+			// base color
+			vec3 ecol = //vec3(texCoord,0.);
+					    vec3(.5,.5,1.)*texture2D(u_earth_tex, texCoord).xyz;
+						//vec3(0.3, 0.3, 1.);
+			
+			// sun light
+			vec3 sunpos = vec3(cos(u_time/30.),0,sin(u_time/30.))*1000.;
+			vec3 sunnorm = normalize(sunpos - v_pos);
+			vec3 suncol = vec3(1,1,.8);
+			vec3 normnoise = noise3(v_pos*113.)-.5;
+			vec3 earthnorm = normalize(v_pos + .4*normnoise);
+			vec3 viewnorm = normalize(v_pos_world);
+			float sund = max(0., dot(earthnorm, sunnorm));
+			sund = pow(sund, 1.3);
+			vec3 col = ecol * (.1 + .9*sund) + .4*sund * suncol;
+			
+			// XXX Bogus!
+			sunnorm = normalize(sunpos);
+			sund = max(0., dot(reflect(viewnorm, earthnorm), sunnorm));
+			col += .4 * pow(sund, 10.) * suncol;
+			//col = sunnorm;//reflect(viewnorm, earthnorm);
+			
+			// selection flash-light
+			float d = distance(u_selPoint, v_pos);
+			col += vec3(smoothstep(.01,.0,abs(d-1.)-0.02));
+
+			// timezone
+			float tz = texture2D(u_timezones_tex, texCoord).x * 39.;
+			col += .3 * smoothstep(.5, .0, abs(tz - mod(u_time,40.)));
+			
+			gl_FragColor = vec4(clamp(col, 0., 1.), 1.0);
+		}
+		
+	</script>
+
+    <script language="Javascript" type="text/javascript" src="gl-matrix-min.js"></script>
+    <script language="Javascript" type="text/javascript" src="webgl.js"></script>
+    <script language="Javascript" type="text/javascript" src="model.js"></script>
+    <script language="Javascript" type="text/javascript" src="earthdata.js"></script>
+    <script language="Javascript" type="text/javascript" src="waterdata.js"></script>
+    <script language="Javascript" type="text/javascript" src="starsdata.js"></script>
+    <script language="Javascript" type="text/javascript" src="earthcanvas.js"></script>
+
+</head>
+
+<body onLoad="webGlStart()">
+	
+	<div align="center">
+		<canvas id="earth_canvas" style="border: none;" width="512" height="512"></canvas>
+	</div>
+
+	<p id="debug"></p>
+    <p id="curTime"></p>
+    <pre id="info"></pre>
+
+</body>
+
+</html>
