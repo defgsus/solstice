@@ -21,8 +21,8 @@ function Model()
 	this.initShaders = function(id)
 	{
 		// get shader source
-		fragmentShader = getShader(gl, id + "-fs");
-		vertexShader = getShader(gl, "shader-vs");
+		var fragmentShader = getShader(gl, id + "-fs");
+		var vertexShader = getShader(gl, "shader-vs");
 
 		// compile and link
 		this.shaderProgram = gl.createProgram();

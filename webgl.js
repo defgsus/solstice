@@ -1,6 +1,7 @@
 /*	Boilerplate code based on this tutorial http://learningwebgl.com/blog/?p=28
-
-	(c) 2015, Stefan Berke (modular-audio-graphics.com)
+	And other sources..
+	
+	(c) 2015, Stefan Berke (cymatrix.org/modular-audio-graphics.com)
  */ 
 
 var gl;
@@ -70,4 +71,27 @@ window.requestAnimFrame = (function() {
            window.setTimeout(callback, 1000/60);
          };
 })();
+
+
+function loadTexture(url, doInterpol)
+{
+	var tex = gl.createTexture();
+	var img = new Image();
+	img.onload = function() { handleTextureLoaded(img, tex, doInterpol); }
+	img.src = url;
+	return tex;
+}
+
+function handleTextureLoaded(image, texture, doInterp) 
+{
+	gl.bindTexture(gl.TEXTURE_2D, texture);
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, doInterp ? gl.LINEAR : gl.NEAREST);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, doInterp ? gl.LINEAR_MIPMAP_LINEAR : gl.NEAREST);
+	if (doInterp) {
+		gl.generateMipmap(gl.TEXTURE_2D);
+	}
+	gl.bindTexture(gl.TEXTURE_2D, null);
+}
+
 

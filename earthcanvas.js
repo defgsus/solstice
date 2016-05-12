@@ -265,25 +265,7 @@ function initStarModel()
 
 function initTextures() 
 {
-	earthTexture = gl.createTexture();
-	earthImage = new Image();
-	earthImage.onload = function() { handleTextureLoaded(earthImage, earthTexture, true); }
-	earthImage.src = "naturalearth_color.jpg";
-
-	timezoneTexture = gl.createTexture();
-	timezoneImage = new Image();
-	timezoneImage.onload = function() { handleTextureLoaded(timezoneImage, timezoneTexture, false); }
-	timezoneImage.src = "timezones_grad.png";
+	earthTexture = loadTexture("naturalearth_color.jpg", true);
+	timezoneTexture = loadTexture("timezones_grad.png", false);
 }
 
-function handleTextureLoaded(image, texture, doInterp) 
-{
-	gl.bindTexture(gl.TEXTURE_2D, texture);
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, doInterp ? gl.LINEAR : gl.NEAREST);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, doInterp ? gl.LINEAR_MIPMAP_LINEAR : gl.NEAREST);
-	if (doInterp) {
-	gl.generateMipmap(gl.TEXTURE_2D);
-	}
-	gl.bindTexture(gl.TEXTURE_2D, null);
-}
