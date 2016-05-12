@@ -17,6 +17,7 @@ var zooms = 0.0;
 var mouseDown = false;
 var lastMouseX = 0;
 var lastMouseY = 0;
+var mouseDownTime;
 
 function debug(n)
 {
@@ -115,8 +116,9 @@ function intersectSphere(ray_origin, ray_direction, sphere_center, sphere_radius
 
 function handleMouseDown(event)
 {
-	pos = getCanvasPos(event);
+	mouseDownTime = Date.now();
 	mouseDown = true;
+	pos = getCanvasPos(event);
 	lastMouseX = pos.x;
 	lastMouseY = pos.y;
 
@@ -183,7 +185,7 @@ function drawScene()
 	starModel.projectMatrix = earthModel.projectMatrix;
 	starModel.modelMatrix = earthModel.modelMatrix;
 
-	if (mouseDown)
+	if (mouseDown && mouseDownTime + 1000 < Date.now())
 		zoom += .1 * (10 - zoom);
 	else
 		zoom -= .05 * zoom;
@@ -220,7 +222,7 @@ function webGlStart()
 	var canvas = document.getElementById("earth_canvas");
 	initGL(canvas);
 	
-	gl.clearColor(0.0, 0.0, 0.0, 1.0);
+	gl.clearColor(0.0, 0.0, 0.0, 0.0);
 	gl.enable(gl.DEPTH_TEST);
 	gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
 
@@ -263,23 +265,25 @@ function initStarModel()
 
 function initTextures() 
 {
-  earthTexture = gl.createTexture();
-  earthImage = new Image();
-  earthImage.onload = function() { handleTextureLoaded(earthImage, earthTexture); }
-  earthImage.src = "naturalearth_color.jpg";
+	earthTexture = gl.createTexture();
+	earthImage = new Image();
+	earthImage.onload = function() { handleTextureLoaded(earthImage, earthTexture, true); }
+	earthImage.src = "naturalearth_color.jpg";
 
-  timezoneTexture = gl.createTexture();
-  timezoneImage = new Image();
-  timezoneImage.onload = function() { handleTextureLoaded(timezoneImage, timezoneTexture); }
-  timezoneImage.src = "timezones_grad.png";
+	timezoneTexture = gl.createTexture();
+	timezoneImage = new Image();
+	timezoneImage.onload = function() { handleTextureLoaded(timezoneImage, timezoneTexture, false); }
+	timezoneImage.src = "timezones_grad.png";
 }
 
-function handleTextureLoaded(image, texture) 
+function handleTextureLoaded(image, texture, doInterp) 
 {
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-  gl.generateMipmap(gl.TEXTURE_2D);
-  gl.bindTexture(gl.TEXTURE_2D, null);
+	gl.bindTexture(gl.TEXTURE_2D, texture);
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, doInterp ? gl.LINEAR : gl.NEAREST);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, doInterp ? gl.LINEAR_MIPMAP_LINEAR : gl.NEAREST);
+	if (doInterp) {
+	gl.generateMipmap(gl.TEXTURE_2D);
+	}
+	gl.bindTexture(gl.TEXTURE_2D, null);
 }
