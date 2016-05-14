@@ -11,17 +11,16 @@
     <meta name="author" content="Stefan Berke" />
 
 	<script id="shader-vs" type="x-shader/x-vertex">
-
 		precision mediump float;
 
 		attribute vec3 a_position;
 
 		uniform mat4 u_projection;
 		uniform mat4 u_modelView;
-		
+
 		varying vec3 v_pos;
 		varying vec3 v_pos_world;
-		
+
 		void main(void) 
 		{
 			vec4 pos_world = u_modelView * vec4(a_position, 1.0);
@@ -30,7 +29,6 @@
 			v_pos_world = pos_world.xyz;
 			gl_Position = u_projection * pos_world;
 		}
-		
 	</script>
 
 	<script id="starshader-fs" type="x-shader/x-fragment">
@@ -59,6 +57,7 @@
 		uniform sampler2D u_earth_tex;
 		uniform sampler2D u_timezones_tex;
 		uniform float u_time;
+		uniform float u_timezone;
 	    uniform vec3 u_selPoint;
 	    
 		void main(void) 
@@ -80,7 +79,7 @@
 			vec3 suncol = vec3(1,1,.8);
 			vec3 earthnorm = normalize(v_pos);
 			float sund = max(0., dot(earthnorm, sunnorm));
-			vec3 col = ecol * (.1 + .9*sund) + .2*sund * suncol;
+			vec3 col = ecol * (.2 + .6*sund) + .2*sund * suncol;
 
 			// selection flash-light
 			float d = distance(u_selPoint, v_pos);
@@ -88,7 +87,7 @@
 			
 			// timezone
 			float tz = texture2D(u_timezones_tex, texCoord).x * 39.;
-			col += .2 * smoothstep(.5, .0, abs(tz - mod(u_time,40.)));
+			col += .2 * smoothstep(.5, .0, abs(tz - u_timezone));
 
 			gl_FragColor = vec4(clamp(col, 0., 1.), 1.0);
 		}
@@ -105,6 +104,7 @@
 		uniform sampler2D u_earth_tex;
 		uniform sampler2D u_timezones_tex;
 		uniform float u_time;
+		uniform float u_timezone;
 		uniform vec3 u_selPoint;
 		
 		float hash1(in vec2 p) { return fract(sin(dot(p,vec2(11,13)))*(7111.1 + dot(p,vec2(103,107)))); }
@@ -178,32 +178,76 @@
 
 			// timezone
 			float tz = texture2D(u_timezones_tex, texCoord).x * 39.;
-			col += .3 * smoothstep(.5, .0, abs(tz - mod(u_time,40.)));
+			col += .3 * smoothstep(.5, .0, abs(tz - u_timezone));
 			
 			gl_FragColor = vec4(clamp(col, 0., 1.), 1.0);
 		}
 		
 	</script>
 
-    <script language="Javascript" type="text/javascript" src="gl-matrix-min.js"></script>
-    <script language="Javascript" type="text/javascript" src="webgl.js"></script>
-    <script language="Javascript" type="text/javascript" src="model.js"></script>
-    <script language="Javascript" type="text/javascript" src="earthdata.js"></script>
-    <script language="Javascript" type="text/javascript" src="waterdata.js"></script>
-    <script language="Javascript" type="text/javascript" src="starsdata.js"></script>
-    <script language="Javascript" type="text/javascript" src="earthcanvas.js"></script>
+    <script type="text/javascript" src="gl-matrix-min.js"></script>
+    <script type="text/javascript" src="webgl.js"></script>
+    <script type="text/javascript" src="model.js"></script>
+    <script type="text/javascript" src="earthdata.js"></script>
+    <script type="text/javascript" src="waterdata.js"></script>
+    <script type="text/javascript" src="starsdata.js"></script>
+    <script type="text/javascript" src="earthcanvas.js"></script>
 
 </head>
 
-<body bgcolor="#000" onLoad="webGlStart()">
+<body bgcolor="#000" text="#fff" onLoad="initializeEarth()">
 	
 	<div align="center">
 		<canvas id="earth_canvas" style="border: none;" width="512" height="512"></canvas>
 	</div>
+	
+	<p>Timezone
+		<select name=timezoneList onchange="earthInstance.setTimezone(this.selectedIndex);">
+		<!-- indexed 0-39, see merge_time_zones.py and http://naturalearthdata.com -->
+		<option>UTC-12</option>
+		<option>UTC-11</option>
+		<option>UTC-10</option>
+		<option>UTC-9:30</option>
+		<option>UTC-9</option>
+		<option>UTC-8</option>
+		<option>UTC-7</option>
+		<option>UTC-6</option>
+		<option>UTC-5</option>
+		<option>UTC-4:30</option>
+		<option>UTC-4</option>
+		<option>UTC-3:30</option>
+		<option>UTC-3</option>
+		<option>UTC-2</option>
+		<option>UTC-1</option>
+		<option>UTC(0)</option>
+		<option>UTC+1</option>
+		<option>UTC+2</option>
+		<option>UTC+3</option>
+		<option>UTC+3:30</option>
+		<option>UTC+4</option>
+		<option>UTC+4:30</option>
+		<option>UTC+5</option>
+		<option>UTC+5:30</option>
+		<option>UTC+5:45</option>
+		<option>UTC+6</option>
+		<option>UTC+6:30</option>
+		<option>UTC+7</option>
+		<option>UTC+8</option>
+		<option>UTC+8:45</option>
+		<option>UTC+9</option>
+		<option>UTC+9:30</option>
+		<option>UTC+10</option>
+		<option>UTC+10:30</option>
+		<option>UTC+11</option>
+		<option>UTC+11:30</option>
+		<option>UTC+12</option>
+		<option>UTC+12:45</option>
+		<option>UTC+13</option>
+		<option>UTC+14</option>
+		</select>
+
 
 	<p id="debug"></p>
-    <p id="curTime"></p>
-    <pre id="info"></pre>
 
 </body>
 

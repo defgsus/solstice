@@ -50,6 +50,7 @@ function Model()
 		this.u_projection = gl.getUniformLocation(this.shaderProgram, "u_projection");
 		this.u_modelView = gl.getUniformLocation(this.shaderProgram, "u_modelView");
 		this.u_time = gl.getUniformLocation(this.shaderProgram, "u_time");
+		this.u_timezone = gl.getUniformLocation(this.shaderProgram, "u_timezone");
 		this.u_selPoint = gl.getUniformLocation(this.shaderProgram, "u_selPoint");
 		tex = gl.getUniformLocation(this.shaderProgram, "u_earth_tex");
 		gl.uniform1i(tex, 0);
@@ -93,7 +94,6 @@ function Model()
 		this.vb_index.itemSize = 1;
 		this.vb_index.numItems = indices.length;
 	}
-
 	
 	this.draw = function()
 	{
@@ -116,6 +116,7 @@ function Model()
 		//date = new Date();
 		//gl.uniform1f(this.u_time, date.getMinutes()*60 + date.getSeconds());
 		gl.uniform1f(this.u_time, (Date.now()-1462700000000)/1000.);
+		if (this.timezone) gl.uniform1f(this.u_timezone, this.timezone);
 		if (this.selPoint) gl.uniform3f(this.u_selPoint, this.selPoint[0], this.selPoint[1], this.selPoint[2]);
 
 		// draw
